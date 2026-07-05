@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Validation Results</title>
+
+
+<style>
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 40px;
+    min-height: 100vh;
+
+    background: linear-gradient(
+        135deg,
+        #0b1220 0%,
+        #111827 45%,
+        #1e293b 100%
+    );
+
+    color: #e5e7eb;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+
+    background: rgba(17, 24, 39, 0.95);
+
+    border: 1px solid rgba(255,255,255,0.1);
+
+    padding: 30px;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 8px 32px rgba(0,0,0,0.45);
+
+    backdrop-filter: blur(4px);
+}
+
+h1 {
+    color: #00b388;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: #00b388;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 18px;
+    color: #f8fafc;
+}
+
+input[type="file"],
+input[type="number"] {
+
+    margin-top: 8px;
+    padding: 10px;
+    width: 100%;
+
+    background: #1f2937;
+    color: #f8fafc;
+
+    border: 1px solid #374151;
+    border-radius: 6px;
+
+    box-sizing: border-box;
+}
+
+input[type="file"]::file-selector-button {
+
+    background: #00b388;
+    color: white;
+
+    border: none;
+
+    padding: 8px 14px;
+    border-radius: 6px;
+
+    cursor: pointer;
+}
+
+button {
+
+    margin-top: 24px;
+    margin-right: 12px;
+
+    padding: 12px 24px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #00b388;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #009970;
+}
+
+button.secondary {
+    background: #2563eb;
+}
+
+button.secondary:hover {
+    background: #1d4ed8;
+}
+
+pre {
+
+    background: #020617;
+
+    color: #e2e8f0;
+
+    border: 1px solid #334155;
+
+    padding: 20px;
+
+    border-radius: 10px;
+
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.error {
+
+    background: rgba(127, 29, 29, 0.25);
+
+    color: #fecaca;
+
+    border: 1px solid #dc2626;
+
+    padding: 16px;
+
+    border-radius: 10px;
+
+    margin-top: 20px;
+}
+
+.hint {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Optional Aruba Accent */
+
+.container::before {
+    content: "";
+
+    display: block;
+
+    height: 4px;
+
+    background: #00b388;
+
+    margin: -30px -30px 25px -30px;
+
+    border-radius: 16px 16px 0 0;
+}
+
+.report-link {
+    display: inline-block;
+
+    padding: 10px 16px;
+    margin: 4px 0;
+
+    background: #00b388;   /* Aruba Green */
+
+    color: white !important;
+
+    text-decoration: none;
+
+    border-radius: 8px;
+
+    font-weight: 600;
+}
+
+.report-link:hover {
+    background: #009970;
+    color: white !important;
+}
+
+
+.back-link {
+    display: inline-block;
+
+    margin-top: 25px;
+
+    padding: 10px 18px;
+
+    background: #00b388;
+
+    color: white !important;
+
+    text-decoration: none;
+
+    border-radius: 8px;
+
+    font-weight: 600;
+}
+
+.back-link:hover {
+    background: #009970;
+    color: white !important;
+}
+
+</style>
+
+
+</head>
+
+<body>
+<div class="container">
+    <h1>Validation Results</h1>
+
+
+{% if report_folder %}
+
+<div class="success">
+    <strong>Reports generated successfully.</strong><br>
+
+    Results folder:
+    {{ report_folder }}
+</div>
+
+{% endif %}
+
+
+{% if report_files %}
+
+<h2>Download Reports</h2>
+
+<ul>
+
+
+{% for report in report_files %}
+
+<li>
+    <a
+      class="report-link"
+      href="/download/{{ report.folder }}/{{ report.file }}"
+      {% if '.html' in report.file %}
+      target="_blank"
+      {% endif %}
+    >
+
+	{% if '.html' in report.file %}
+    		👁 View HTML Report
+
+	{% elif '.json' in report.file %}
+    		📥 Download JSON Report
+
+	{% elif '.md' in report.file %}
+    		📥 Download Markdown Report
+
+	{% else %}
+    		{{ report.file }}
+
+	{% endif %}
+
+    </a>
+</li>
+
+{% endfor %}
+
+</ul>
+
+{% endif %}
+
+
+    {% if error %}
+        <div class="error">
+            <strong>Error:</strong>
+            {{ error }}
+        </div>
+    {% endif %}
+
+    {% if output %}
+        <h2>Execution Output</h2>
+        <pre>{{ output }}</pre>
+    {% endif %}
+
+
+
+<a href="/" class="back-link">
+    Run Another Validation
+</a>
+
+
+</div>
+</body>
+</html>

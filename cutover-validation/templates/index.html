@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Device Command Validation</title>
+
+
+<style>
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 40px;
+    min-height: 100vh;
+
+    background: linear-gradient(
+        135deg,
+        #0b1220 0%,
+        #111827 45%,
+        #1e293b 100%
+    );
+
+    color: #e5e7eb;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+
+    background: rgba(17, 24, 39, 0.95);
+
+    border: 1px solid rgba(255,255,255,0.1);
+
+    padding: 30px;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 8px 32px rgba(0,0,0,0.45);
+
+    backdrop-filter: blur(4px);
+}
+
+h1 {
+    color: #00b388;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: #00b388;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 18px;
+    color: #f8fafc;
+}
+
+input[type="file"],
+input[type="number"] {
+
+    margin-top: 8px;
+    padding: 10px;
+    width: 100%;
+
+    background: #1f2937;
+    color: #f8fafc;
+
+    border: 1px solid #374151;
+    border-radius: 6px;
+
+    box-sizing: border-box;
+}
+
+input[type="file"]::file-selector-button {
+
+    background: #00b388;
+    color: white;
+
+    border: none;
+
+    padding: 8px 14px;
+    border-radius: 6px;
+
+    cursor: pointer;
+}
+
+button {
+
+    margin-top: 24px;
+    margin-right: 12px;
+
+    padding: 12px 24px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #00b388;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #009970;
+}
+
+button.secondary {
+    background: #2563eb;
+}
+
+button.secondary:hover {
+    background: #1d4ed8;
+}
+
+pre {
+
+    background: #020617;
+
+    color: #e2e8f0;
+
+    border: 1px solid #334155;
+
+    padding: 20px;
+
+    border-radius: 10px;
+
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.error {
+
+    background: rgba(127, 29, 29, 0.25);
+
+    color: #fecaca;
+
+    border: 1px solid #dc2626;
+
+    padding: 16px;
+
+    border-radius: 10px;
+
+    margin-top: 20px;
+}
+
+.hint {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Optional Aruba Accent */
+
+.container::before {
+    content: "";
+
+    display: block;
+
+    height: 4px;
+
+    background: #00b388;
+
+    margin: -30px -30px 25px -30px;
+
+    border-radius: 16px 16px 0 0;
+}
+
+</style>
+
+
+</head>
+
+<body>
+<div class="container">
+    <h1>Device Command Validation</h1>
+
+    <p class="hint">
+        Upload your Central credentials file and troubleshooting commands YAML.
+        You can either upload a device YAML/CSV file or load sites from Central and select them from the web page.
+    </p>
+
+    <form method="POST" enctype="multipart/form-data">
+        <label>Central Credentials File</label>
+        <input type="file" name="credentials" required>
+
+        <label>Troubleshooting Commands YAML File</label>
+        <input type="file" name="commands" required>
+
+        <label>Devices YAML or CSV File <span style="color: green;">Optional</span></label>
+        <input type="file" name="devices">
+
+        <label>Max Concurrent Device Executions</label>
+        <input type="number" name="max_workers" value="{{ default_workers }}" min="1">
+
+        <button type="submit" name="action" value="run_with_device_file">
+            Run with Device File
+        </button>
+
+        <button type="submit" name="action" value="load_sites" class="secondary">
+            Load Sites for Selection
+        </button>
+    </form>
+
+    {% if error %}
+        <div class="error">
+            <strong>Error:</strong>
+            {{ error }}
+        </div>
+    {% endif %}
+
+    {% if output %}
+        <h2>Execution Output</h2>
+        <pre>{{ output }}</pre>
+    {% endif %}
+</div>
+</body>
+</html>

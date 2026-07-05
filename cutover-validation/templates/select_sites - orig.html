@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Select Sites</title>
+
+   
+<style>
+
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    margin: 40px;
+    min-height: 100vh;
+
+    background: linear-gradient(
+        135deg,
+        #0b1220 0%,
+        #111827 45%,
+        #1e293b 100%
+    );
+
+    color: #e5e7eb;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+
+    background: rgba(17, 24, 39, 0.95);
+
+    border: 1px solid rgba(255,255,255,0.1);
+
+    padding: 30px;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 8px 32px rgba(0,0,0,0.45);
+
+    backdrop-filter: blur(4px);
+}
+
+h1 {
+    color: #00b388;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: #00b388;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 18px;
+    color: #f8fafc;
+}
+
+input[type="file"],
+input[type="number"] {
+
+    margin-top: 8px;
+    padding: 10px;
+    width: 100%;
+
+    background: #1f2937;
+    color: #f8fafc;
+
+    border: 1px solid #374151;
+    border-radius: 6px;
+
+    box-sizing: border-box;
+}
+
+input[type="file"]::file-selector-button {
+
+    background: #00b388;
+    color: white;
+
+    border: none;
+
+    padding: 8px 14px;
+    border-radius: 6px;
+
+    cursor: pointer;
+}
+
+button {
+
+    margin-top: 24px;
+    margin-right: 12px;
+
+    padding: 12px 24px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: #00b388;
+
+    color: white;
+
+    font-size: 16px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #009970;
+}
+
+button.secondary {
+    background: #2563eb;
+}
+
+button.secondary:hover {
+    background: #1d4ed8;
+}
+
+pre {
+
+    background: #020617;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    padding: 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.error {
+
+    background: rgba(127, 29, 29, 0.25);
+    color: #fecaca;
+    border: 1px solid #dc2626;
+    padding: 16px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+
+.hint {
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Optional Aruba Accent */
+
+.container::before {
+    content: "";
+    display: block;
+    height: 4px;
+    background: #00b388;
+    margin: -30px -30px 25px -30px;
+    border-radius: 16px 16px 0 0;
+}
+
+</style>
+
+
+<script>
+
+
+function updateSelectedCount() {
+
+    let totalAps = 0;
+    let totalSites = 0;
+
+    document.querySelectorAll(
+        'input[name="selected_sites"]:checked'
+    ).forEach(cb => {
+
+        totalSites++;
+
+        totalAps += parseInt(
+            cb.dataset.apCount
+        );
+    });
+
+    document.getElementById(
+        "selectedApCount"
+    ).innerText = totalAps;
+
+    document.getElementById(
+        "selectedSiteCount"
+    ).innerText = totalSites;
+}
+
+    function selectAllSites() {
+        document.querySelectorAll(
+            'input[name="selected_sites"]'
+        ).forEach(cb => cb.checked = true);
+
+        updateSelectedCount();
+    }
+
+    function clearAllSites() {
+        document.querySelectorAll(
+            'input[name="selected_sites"]'
+        ).forEach(cb => cb.checked = false);
+
+        updateSelectedCount();
+    }
+
+</script>
+
+</head>
+
+<body>
+<div class="container">
+    <h1>Select Sites</h1>
+
+    <p class="hint">
+        Select one or more sites to run troubleshooting commands against online APs.
+    </p>
+
+
+    <button type="button" onclick="selectAllSites()">Select All</button>
+    <button type="button" onclick="clearAllSites()">Clear All</button>
+ 
+    <p>
+       <strong>Total APs Selected:</strong>
+       <span id="selectedApCount">0</span>
+    </p>
+    <p>
+       <strong>Sites Selected:</strong>
+       <span id="selectedSiteCount">0</span>
+    </p>
+
+    <form method="POST" action="/run_site_validation">
+
+      <table>
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>Site</th>
+                    <th>Site ID</th>
+                    <th>Online APs</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for site_id, site in sites.items() %}
+                <tr>
+                    <td>
+
+			<input
+    			  type="checkbox"
+    			  name="selected_sites"
+    			  value="{{ site_id }}"
+    			  checked
+    			  data-ap-count="{{ site.get('online_serials', []) | length }}"
+    			  onchange="updateSelectedCount()"
+			>
+                    </td>
+
+                    <td>
+                        {{ site.get("site_name") or site.get("name") or site_id }}
+                    </td>
+		    <td>{{ site_id }}</td>
+                    <td>
+                        {{ site.get("online_serials", []) | length }}
+                    </td>
+
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+	<button
+   	 	type="submit"
+    		onclick="this.disabled=true; this.innerText='Running Validation...'; this.form.submit();"
+	>
+    		Run Validation for Selected Sites
+	</button>
+
+    </form>
+
+    {% if log_output %}
+        <h2>Site Discovery Output</h2>
+        <pre>{{ log_output }}</pre>
+    {% endif %}
+</div>
+
+<script>
+    updateSelectedCount();
+</script>
+
+</body>
+</html>

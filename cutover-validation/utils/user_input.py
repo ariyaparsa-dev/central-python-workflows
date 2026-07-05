@@ -33,7 +33,7 @@ def prompt_confirmation(device_serials: List[str], commands: List[str]) -> bool:
             print("Invalid input. Please enter 'yes' or 'no'.")
 
 
-def prompt_site_selection(sites_data: dict) -> List[str]:
+def prompt_site_selection(sites_data: dict, firmware_lookup=None,) -> List[str]:
     """Prompt user to select a site."""
     if not sites_data:
         print("No sites available to select.")
@@ -45,8 +45,13 @@ def prompt_site_selection(sites_data: dict) -> List[str]:
 
     print("Select a site to run troubleshooting commands:")
     print()
+
     for idx, (site_id, data) in enumerate(sorted_sites, 1):
-        print(f"  {idx}. {data['name']} ({data['online_count']} online APs)")
+        print(
+            f"  {idx}. {data['name']} "
+            f"({data['online_count']} online devices)"
+        )
+
 
     while True:
         try:
@@ -59,16 +64,29 @@ def prompt_site_selection(sites_data: dict) -> List[str]:
 
                 print(f"\nSelected Site: {selected_site_name}")
                 print(
-                    f"\nTroubleshooting will be performed on all online APs in '{selected_site_name}':"
+                    f"\nTroubleshooting will be performed on all online devices in '{selected_site_name}':"
                 )
 
+                # Inject firmware values before displaying
+
+                if firmware_lookup:
+
+                    for device in selected_site_data["online_device_details"]:
+
+                        device.firmware = firmware_lookup.get(
+                            device.serial,
+                            "N/A"
+                        )
+
                 # Display selected devices
+
                 from utils.tables import display_device_table
 
                 display_device_table(
-                    selected_site_data["online_ap_details"],
-                    f"Online APs in {selected_site_name}",
+                    selected_site_data["online_device_details"],
+                    f"Online devices in {selected_site_name}",
                 )
+
 
                 return [selected_site_id]
             else:

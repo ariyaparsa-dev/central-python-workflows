@@ -15,6 +15,7 @@ class Device:
     serial: str
     name: str = "N/A"
     model: str = "N/A"
+    device_type: str = "UNKNOWN"
     ip_address: str = "N/A"
     mac_address: str = "N/A"
     firmware: str = "N/A"
@@ -28,6 +29,12 @@ class Device:
             serial=_safe_value(getattr(ap, "serial", None)),
             name=_safe_value(getattr(ap, "name", None)),
             model=_safe_value(getattr(ap, "model", None)),
+
+            device_type=_safe_value(
+                    getattr(ap, "device_type", None),
+                    "UNKNOWN"
+                ),
+
             ip_address=_safe_value(getattr(ap, "ipv4", None)),
             mac_address=_safe_value(getattr(ap, "mac", None)),
             firmware=_safe_value(getattr(ap, "software-version", None)),
@@ -49,6 +56,7 @@ class Device:
             "serial": self.serial,
             "name": self.name,
             "model": self.model,
+            "device_type": self.device_type,
             "ip_address": self.ip_address,
             "mac_address": self.mac_address,
             "firmware": self.firmware,

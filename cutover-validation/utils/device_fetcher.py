@@ -118,28 +118,89 @@ def fetch_sites_and_devices(central_conn) -> dict:
                 except Exception as e:
                     print(f"Warning: Failed to fetch device {device_id}: {e}")
 
-            # Filter APs
-            aps = [d for d in site_devices if d.device_type == "ACCESS_POINT"]
-            online_aps = [ap for ap in aps if ap.status == "ONLINE"]
+            # APs
+            aps = [
+                d for d in site_devices
+                if d.device_type == "ACCESS_POINT"
+            ]
 
-            # Skip sites with no online APs
-            if not online_aps:
+            online_aps = [
+                d for d in aps
+                if d.status == "ONLINE"
+            ]
+
+            # Switches
+            switches = [
+                d for d in site_devices
+                if d.device_type == "SWITCH"
+            ]
+
+            online_switches = [
+                d for d in switches
+                if d.status == "ONLINE"
+            ]
+
+            # Gateways
+            gateways = [
+                d for d in site_devices
+                if d.device_type == "GATEWAY"
+            ]
+
+            online_gateways = [
+                d for d in gateways
+                if d.status == "ONLINE"
+            ]
+
+            total_online_devices = (
+                len(online_aps)
+                + len(online_switches)
+                + len(online_gateways)
+            )
+
+            # Skip sites with no online devices
+            if total_online_devices == 0:
                 continue
 
-            offline_aps = [ap for ap in aps if ap.status != "ONLINE"]
+            online_device_details = [
+                Device.from_api_object(device)
+                for device in (
+                    online_aps
+                    + online_switches
+                    + online_gateways
+                )
+            ]
 
-            # Extract detailed info from online APs
-            online_ap_details = [Device.from_api_object(ap) for ap in online_aps]
-
+            
             sites_data[site_id] = {
                 "name": site_name,
                 "site_id": site_id,
-                "online_count": len(online_aps),
-                "offline_count": len(offline_aps),
-                "online_serials": [ap.serial for ap in online_aps],
-                "online_ap_details": online_ap_details,
+
+                "online_ap_count": len(online_aps),
+                "online_switch_count": len(online_switches),
+                "online_gateway_count": len(online_gateways),
+
+                "online_count": total_online_devices,
+
+                "offline_count":
+                    len(aps)
+                    + len(switches)
+                    + len(gateways)
+                    - total_online_devices,
+
+                "online_serials": [
+                    d.serial
+                    for d in (
+                        online_aps
+                        + online_switches
+                        + online_gateways
+                    )
+                ],
+
+                "online_device_details": online_device_details,
+
                 "total_devices": len(site_devices),
             }
+
 
         return sites_data
     except Exception as e:

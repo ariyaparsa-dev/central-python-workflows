@@ -1,6 +1,32 @@
 **/env/*
-**/,venv/*
+**/.venv/*
 *.pyc
 .DS_Store
 __pycache__/
 *.pyc
+
+#**redentials
+cutover**alidation/account_credentials.yam**
+# Uploads
+cutover-validation/upl**ds/
+
+# Generated reports
+cutover-**lidation/results_*/
+
+# Test scrip**
+cutover-validation/firmware-test**y
+
+# Python
+__pycache__/
+*.pyc
+.v**v/
+**/.venv/
+
+# Backup files
+* - **ig.py
+* - last working.py
+* - bef**e progress.py
+
+# macOS / Windows
+**S_Store
+Thumbs.db

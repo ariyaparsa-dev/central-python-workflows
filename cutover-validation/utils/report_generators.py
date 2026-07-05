@@ -220,3 +220,4 @@ def generate_all_reports(output_data: List[Dict]) -> None:
     print(f"\nReports saved to: {output_dir}")
     print("\nOpen the HTML report for the best viewing experience:")
     print(f"  open {html_file}")
+    return str(output_dir)

@@ -1,9 +1,9 @@
 # Device List YAML
 # Format 1: Simple list
 devices:
-  - SERIAL123456
-  - SERIAL789012
-  - SERIAL345678
+  - CNK6KSM099
+  - VN3ALBD0MQ
+  - CNJFKLB01Q
 
 # Alternative Format 2: List of device objects
 # - device_serial: SERIAL123456

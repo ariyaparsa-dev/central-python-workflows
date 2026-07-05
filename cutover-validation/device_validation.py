@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import List
 from pycentral import NewCentralBase
+from utils.firmware import get_firmware_lookup
 
 # Import from utils modules
 from utils.models import Device, CommandResult
@@ -38,11 +39,12 @@ from utils.report_generators import generate_all_reports
 
 _print_lock = threading.Lock()
 
-
 def process_single_device(
     device_serial: str,
     commands: List[str],
     central_conn: NewCentralBase,
+    progress_data=None,
+
 ) -> List[CommandResult]:
     """Process a single device and execute commands, buffering output for atomic printing."""
     buf = io.StringIO()
@@ -55,6 +57,11 @@ def process_single_device(
     log(f"{'=' * SEPARATOR_WIDTH}")
 
     results = []
+
+
+    if progress_data is not None:
+        progress_data["current_device"] = device_serial
+
     try:
         device_instance = central_conn.scopes.find_device(device_serials=device_serial)
         if not device_instance:
@@ -126,7 +133,7 @@ def process_single_device(
 
 
 def process_all_devices(
-    device_serials: List[str], commands: List[str], central_conn, max_workers: int
+    device_serials: List[str], commands: List[str], central_conn, max_workers: int,progress_data=None,
 ) -> List[CommandResult]:
     """Process all devices in parallel with bounded worker concurrency."""
     all_results = []
@@ -140,24 +147,48 @@ def process_all_devices(
     )
     print(f"{'=' * SEPARATOR_WIDTH}\n")
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_serial = {
-            executor.submit(
-                process_single_device,
-                serial,
-                commands,
-                central_conn,
-            ): serial
-            for serial in device_serials
-        }
 
-        for future in as_completed(future_to_serial):
-            serial = future_to_serial[future]
-            try:
-                results = future.result()
-                all_results.extend(results)
-            except Exception as e:
-                print(f"Error processing device {serial} in worker: {str(e)}")
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+
+            future_to_serial = {
+                executor.submit(
+                    process_single_device,
+                    serial,
+                    commands,
+                    central_conn,
+                    progress_data,
+                ): serial
+                for serial in device_serials
+            }
+
+            for future in as_completed(future_to_serial):
+
+                serial = future_to_serial[future]
+
+                try:
+
+                    results = future.result()
+
+                    if progress_data is not None:
+
+                        progress_data["completed"] += 1
+                        progress_data["successful"] += 1
+                        progress_data["current_device"] = serial
+
+                    all_results.extend(results)
+
+                except Exception as e:
+
+                    if progress_data is not None:
+
+                        progress_data["completed"] += 1
+                        progress_data["failed"] += 1
+                        progress_data["current_device"] = serial
+
+                    print(
+                        f"Error processing device {serial} in worker: {str(e)}"
+                    )
 
     return all_results
 
@@ -198,10 +229,13 @@ def save_results(results: List[CommandResult], devices: List[Device]) -> None:
         *device_entries,
     ]
 
-    generate_all_reports(output_data)
+    
+    report_folder = generate_all_reports(output_data)
+
     print(f"  Total devices: {len(device_results)}")
     print(f"  Total commands executed: {len(results)}")
-
+    
+    return report_folder
 
 def parse_args():
     """Parse and return command-line arguments."""
@@ -234,86 +268,156 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    args = parse_args()
+def get_sites_for_selection(credentials_file: str):
+    """
+    Connect to Central and return sites/devices data for web-based site selection.
+    Used by Flask before running validation.
+    """
+    print("\nConnecting to Central...")
+    central_conn = NewCentralBase(
+        token_info=credentials_file,
+        enable_scope=True,
+        log_level="ERROR",
+    )
+
+    print("Fetching all sites and devices...")
+    sites_data = fetch_sites_and_devices(central_conn)
+
+    if not sites_data:
+        raise RuntimeError("No sites with online devices found in the account.")
+
+    return sites_data
+
+
+def run_validation(
+    credentials_file: str,
+    troubleshooting_commands_file: str,
+    devices_file: str | None = None,
+    selected_site_ids: list[str] | None = None,
+    max_workers: int = MAX_CONCURRENT_DEVICE_EXECUTIONS,
+    skip_confirmation: bool = True,
+    progress_data: dict | None = None,
+):
+    """
+    Run validation from Python/web app instead of CLI.
+
+    Supports:
+    - Device YAML/CSV file mode
+    - Web-based selected site mode
+    - Original CLI interactive site selection mode
+    """
 
     # Load troubleshooting commands
     try:
-        commands = load_commands(args.troubleshooting_commands)
+        commands = load_commands(troubleshooting_commands_file)
     except Exception as e:
-        print(f"Error loading troubleshooting commands: {str(e)}")
-        sys.exit(1)
+        raise RuntimeError(f"Error loading troubleshooting commands: {str(e)}")
 
     print(f"Loaded {len(commands)} troubleshooting command(s)")
 
     # Connect to API
     print("\nConnecting to Central...")
-    # Initialize Central connection with scopes enabled using the provided credentials.
 
     try:
         central_conn = NewCentralBase(
-            token_info=args.credentials, enable_scope=True, log_level="ERROR"
+            token_info=credentials_file,
+            enable_scope=True,
+            log_level="ERROR",
         )
-
     except Exception as e:
-        print(f"Error connecting to Central: {str(e)}")
-        sys.exit(1)
+        raise RuntimeError(f"Error connecting to Central: {str(e)}")
+    print("Loading firmware details...")
 
-    # Determine device selection method
-    if args.devices:
-        # Load device serials from file
-        is_csv_input = args.devices.lower().endswith(".csv")
+    firmware_lookup = get_firmware_lookup(
+        central_conn
+    )
+
+    print(
+        f"Retrieved firmware for "
+        f"{len(firmware_lookup)} devices"
+    )
+
+
+    # ------------------------------------------------------------
+    # Mode 1: Device file mode - YAML or CSV uploaded
+    # ------------------------------------------------------------
+    if devices_file:
+        is_csv_input = devices_file.lower().endswith(".csv")
 
         if is_csv_input:
-            print(f"Loading device serials from CSV: {args.devices}")
-            device_serials = load_device_serials_from_csv(args.devices)
+            print(f"Loading device serials from CSV: {devices_file}")
+            device_serials = load_device_serials_from_csv(devices_file)
         else:
-            print(f"Loading device serials from YAML: {args.devices}")
-            device_serials = load_device_serials_from_yaml(args.devices)
+            print(f"Loading device serials from YAML: {devices_file}")
+            device_serials = load_device_serials_from_yaml(devices_file)
 
         print(f"Loaded {len(device_serials)} device serial(s)")
 
-        # Fetch device details in parallel
         fetch_result = fetch_devices_parallel(device_serials, central_conn)
 
-        # Display status tables
         display_device_status_summary(fetch_result)
 
-        # Filter to only online device serials (which have site assignment)
         device_serials = [device.serial for device in fetch_result.online]
 
         if not fetch_result.has_actionable_devices:
             if fetch_result.unassigned:
-                print(
-                    "\nDevices were found, but none are assigned to a site."
-                )
-                print(
-                    "Assign the devices to a site in Central before troubleshooting. Exiting."
+                raise RuntimeError(
+                    "Devices were found, but none are assigned to a site. "
+                    "Assign the devices to a site in Central before troubleshooting."
                 )
             else:
-                print("\nNo online devices available for troubleshooting. Exiting.")
-            sys.exit(1)
-
-        # Show confirmation
-        if not prompt_confirmation(device_serials, commands):
-            sys.exit(0)
+                raise RuntimeError("No online devices available for troubleshooting.")
 
         devices_for_save = fetch_result.online
+        for device in devices_for_save:
 
+            device.firmware = firmware_lookup.get(
+             device.serial,
+             "N/A"
+            )
+
+    # ------------------------------------------------------------
+    # Mode 2 or 3: Site selection mode
+    # ------------------------------------------------------------
     else:
-        # Site selection mode
         print("\nNo device file provided. Using site selection mode...\n")
         print("Fetching all sites and devices...")
+
         sites_data = fetch_sites_and_devices(central_conn)
 
         if not sites_data:
-            print("No sites with online APs found in the account. Exiting.")
-            sys.exit(1)
+            raise RuntimeError("No sites with online devices found in the account.")
 
         display_site_table(sites_data)
-        selected_site_ids = prompt_site_selection(sites_data)
 
-        # Get device serials from selected site
+        # Convert site keys to strings because HTML forms submit values as strings
+        site_key_lookup = {str(site_id): site_id for site_id in sites_data.keys()}
+
+        # Mode 2: Flask/web selected sites
+        if selected_site_ids is not None:
+            if not selected_site_ids:
+                raise RuntimeError("No sites were selected.")
+
+            selected_site_ids = [
+                site_key_lookup[site_id]
+                for site_id in selected_site_ids
+                if site_id in site_key_lookup
+            ]
+
+            if not selected_site_ids:
+                raise RuntimeError("Selected site IDs do not match available sites.")
+
+            print(f"\nSelected {len(selected_site_ids)} site(s) from web UI.")
+
+        # Mode 3: Original CLI interactive prompt
+        else:
+            if skip_confirmation:
+                # Fallback for non-interactive use
+                selected_site_ids = list(sites_data.keys())
+                print(f"\nAutomatically selected all {len(selected_site_ids)} site(s).")
+            else:
+                selected_site_ids = prompt_site_selection(sites_data,firmware_lookup)
+
         device_serials = [
             serial
             for site_id in selected_site_ids
@@ -322,34 +426,92 @@ def main():
         ]
 
         if not device_serials:
-            print("No online APs found in the selected site(s). Exiting.")
-            sys.exit(1)
+            raise RuntimeError("No online devices found in the selected site(s).")
 
-        print(f"\nFound {len(device_serials)} online AP(s) in selected site(s)")
+        print(f"\nFound {len(device_serials)} online device(s) in selected site(s).")
 
-        if not prompt_confirmation(device_serials, commands):
-            sys.exit(0)
-
-        # Extract devices for saving
         devices_for_save = []
+
         for site_id in selected_site_ids:
             if site_id in sites_data:
-                devices_for_save.extend(sites_data[site_id]["online_device_details"])
+                devices_for_save.extend(
+                    sites_data[site_id]["online_device_details"]
+                )
+        for device in devices_for_save:
 
-    # Process all devices
+            device.firmware = firmware_lookup.get(
+            device.serial,
+            "N/A"
+            )
+
+    # ------------------------------------------------------------
+    # Confirmation
+    # ------------------------------------------------------------
+    if not skip_confirmation:
+        if not prompt_confirmation(device_serials, commands):
+            print("Execution cancelled by user.")
+            return []
+
+    # ------------------------------------------------------------
+    # Process devices
+    # ------------------------------------------------------------
+
+    if progress_data is not None:
+
+        progress_data["total"] = len(device_serials)
+        progress_data["completed"] = 0
+        progress_data["successful"] = 0
+        progress_data["failed"] = 0
+        progress_data["current_device"] = ""
+        progress_data["status"] = "running"
+
+
     all_results = process_all_devices(
-        device_serials, commands, central_conn, args.max_workers
+        device_serials,
+        commands,
+        central_conn,
+        max_workers,
+        progress_data,
     )
 
-    # Save results and generate reports
+    # ------------------------------------------------------------
+    # Save reports
+    # ------------------------------------------------------------
     if all_results:
-        save_results(all_results, devices_for_save)
+        
+        report_folder = save_results(
+            all_results,
+            devices_for_save
+        )
+
         print(
             f"\nExecution completed. Processed {len(all_results)} total commands "
             f"across {len(device_serials)} devices."
         )
     else:
         print("\nNo commands were executed successfully.")
+
+    if progress_data is not None:
+        progress_data["status"] = "completed"
+
+    return {
+        "results": all_results,
+        "report_folder": report_folder,
+    }
+
+
+
+def main():
+    args = parse_args()
+
+    run_validation(
+        credentials_file=args.credentials,
+        troubleshooting_commands_file=args.troubleshooting_commands,
+        devices_file=args.devices,
+        selected_site_ids=None,
+        max_workers=args.max_workers,
+        skip_confirmation=False,
+    )
 
 
 if __name__ == "__main__":
