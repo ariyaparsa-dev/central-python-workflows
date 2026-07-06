@@ -1,5 +1,7 @@
 # Aruba Central Cutover Validation Tool
 
+Enhanced fork of Aruba Central Python Workflows focused on cutover validation, firmware visibility, web-based execution, live progress tracking, and operational reporting.
+
 A web-based validation and troubleshooting workflow for Aruba Central environments that enables operators to safely execute validation commands against Access Points, CX Switches, and Gateways while providing firmware visibility, real-time progress tracking, and multi-format reporting.
 
 ---
