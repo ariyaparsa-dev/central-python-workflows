@@ -73,7 +73,6 @@ This workflow showcases how to connect to Central and demonstrates the two main 
 This workflow retrieves comprehensive device information from both HPE Aruba Networking Central and GreenLake Platform (GLP) APIs. It consolidates device attributes, monitoring data, connectivity status, and subscription details into a single CSV file for easy analysis and reporting.
 
 ### [Cutover Validation](/cutover-validation)
-### /cutover-validation
 
 A web-based Aruba Central validation and troubleshooting workflow for Access Points, CX Switches, and Gateways.
 
@@ -95,7 +94,7 @@ Key capabilities include:
 
 The workflow retrieves device information directly from Aruba Central, validates commands against supported device types, executes troubleshooting commands on online devices, and generates comprehensive reports for operational review.
 
-For complete documentation, installation instructions, Web UI usage, and reporting details, see  ./cutover-validation/README.md.
+For complete documentation, installation instructions, Web UI usage, and reporting details, see  ./cutover-validation/README.md
 
 ### [MSP Control Tower](/msp-tenant-monitoring/)
 This workflow monitors every tenant an MSP manages using a single MSP credential. It discovers managed tenants, then collects sites, devices, clients, and alerts from each one. It ships in two forms: a **web dashboard** for interactive exploration and a **Python CLI** (`main.py`) for scripted export.
