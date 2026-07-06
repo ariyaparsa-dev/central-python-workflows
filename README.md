@@ -73,7 +73,29 @@ This workflow showcases how to connect to Central and demonstrates the two main 
 This workflow retrieves comprehensive device information from both HPE Aruba Networking Central and GreenLake Platform (GLP) APIs. It consolidates device attributes, monitoring data, connectivity status, and subscription details into a single CSV file for easy analysis and reporting.
 
 ### [Cutover Validation](/cutover-validation)
-This script automates the execution of predefined troubleshooting show commands across multiple Aruba Central–managed devices. It is designed for cutover, migration, and validation workflows, allowing operators to run consistent checks at scale without logging into individual devices. Results are collected only from online devices and exported in HTML, Markdown, or JSON for easy review and sharing.
+### /cutover-validation
+
+A web-based Aruba Central validation and troubleshooting workflow for Access Points, CX Switches, and Gateways.
+
+This workflow supports cutover, migration, and operational validation activities by allowing operators to safely execute predefined troubleshooting commands across multiple devices without logging into each device individually.
+
+Key capabilities include:
+
+- Web-based Flask user interface
+- Site-based device discovery and selection
+- YAML and CSV device import support
+- Device preview before execution
+- Real-time progress tracking
+- Success and failure monitoring
+- Firmware version visibility using Aruba Central APIs
+- Validation of troubleshooting commands prior to execution
+- Support for APs, Switches, and Gateways
+- HTML, Markdown, and JSON report generation
+- Browser-based results viewing
+
+The workflow retrieves device information directly from Aruba Central, validates commands against supported device types, executes troubleshooting commands on online devices, and generates comprehensive reports for operational review.
+
+For complete documentation see the workflow README within the `cutover-validation` directory.
 
 ### [MSP Control Tower](/msp-tenant-monitoring/)
 This workflow monitors every tenant an MSP manages using a single MSP credential. It discovers managed tenants, then collects sites, devices, clients, and alerts from each one. It ships in two forms: a **web dashboard** for interactive exploration and a **Python CLI** (`main.py`) for scripted export.
