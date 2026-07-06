@@ -1,267 +1,335 @@
-# Cutover Validation
+# Aruba Central Cutover Validation Tool
 
-This script is intended to run a predefined set of troubleshooting show commands across Central devices.
+A web-based validation and troubleshooting workflow for Aruba Central environments that enables operators to safely execute validation commands against Access Points, CX Switches, and Gateways while providing firmware visibility, real-time progress tracking, and multi-format reporting.
 
-In scenarios such as onboarding to Central, migrating from AOS 8 to AOS 10, migrating from Classic Central to Central or other environment transitions, it is common to run the same operational checks across multiple devices, often scoped to a site or a specific device list.
+---
 
-The script automates this process by allowing you to execute those show commands consistently and repeatedly without manually logging into individual devices.
+# Overview
 
-Commands are executed only on online devices, and results are collected for review and analysis. The output can be generated in multiple formats, including JSON, HTML, and Markdown, making it suitable for programmatic consumption, documentation, or sharing with other teams.
+The Cutover Validation Tool provides a guided workflow for validating Aruba Central managed infrastructure during:
 
-![Cutover Validation Script Workflow](Screenshots/workflow.gif)
+- Network cutovers
+- Device migrations
+- Firmware upgrades
+- Site onboarding
+- Operational troubleshooting
+- Validation of newly deployed infrastructure
 
-## Features
+The solution supports both command-line and web-based execution models and leverages Aruba Central APIs to retrieve device inventory and firmware information.
 
-- **Command Validation** - Validates commands against device capabilities before execution
-- **Batched Command Execution** - Executes up to 20 commands per device in a single `run_show_commands` API call
-- **Multiple Input Formats** - Support for both YAML and CSV device lists
-- **Flexible Configuration** - Separate troubleshooting commands from device lists
-- **Comprehensive Reporting** - Generates JSON, HTML, and Markdown reports with timestamps
-- **Site-Based Filtering** - Select devices by site for targeted troubleshooting
-- **Detailed Logging** - Real-time execution status and error tracking
+---
 
-## Prerequisites
+# Key Features
 
-- Python 3.8 or higher
-- API credentials for HPE Aruba Networking Central (JSON or YAML format)
+## Web User Interface
 
-## Installation
+The solution includes a modern Flask-based web interface that provides an end-to-end workflow without requiring command-line interaction.
 
-1. Clone the repository and navigate to the project folder
-```bash
-git clone -b "v2(pre-release)" https://github.com/aruba/central-python-workflows.git
-cd cutover-validation
+### Capabilities
+
+- Upload Aruba Central credentials
+- Upload troubleshooting command files
+- Discover Aruba Central sites automatically
+- Select sites for validation
+- Preview devices before execution
+- Display firmware versions
+- Launch validation jobs
+- Monitor execution progress in real time
+- View reports directly in the browser
+
+---
+
+## Device Selection Options
+
+### Site-Based Selection
+
+Automatically discover Aruba Central sites and validate all online devices within selected sites.
+
+Features:
+
+- Dynamic site discovery
+- Online device counts
+- AP, Switch, and Gateway visibility
+- Device preview before execution
+
+### Device File Selection
+
+Support for:
+
+- YAML device lists
+- CSV device lists
+
+Example:
+
+```yaml
+devices:
+  - CNK6KSM099
+  - VN3ALBD0MQ
+  - CNJFKLB01Q
 ```
 
-2. Create and activate a virtual environment
-```bash
-python3 -m venv env
-source env/bin/activate  # On Windows use: env\Scripts\activate
+---
+
+# Supported Device Types
+
+The solution supports:
+
+- Aruba Access Points
+- Aruba CX Switches
+- Aruba Gateways
+
+---
+
+# Firmware Visibility
+
+The tool retrieves firmware information directly from Aruba Central using the New Central firmware APIs.
+
+Firmware information is displayed in:
+
+- Site selection previews
+- Device tables
+- Validation reports
+- Result summaries
+
+Example:
+
+| Device | Model | Firmware |
+|----------|----------|----------|
+| AP1 | AP-505H-RW | 10.7.2.5_95489 |
+| 6200 | 6200F | ML.10.16.1006 |
+| Aruba9004_1 | 9004-RW | 10.7.2.5_95489 |
+
+---
+
+# Validation Workflow
+
+The workflow follows these steps:
+
+1. Connect to Aruba Central
+2. Discover available sites and devices
+3. Retrieve firmware information
+4. Select devices or sites
+5. Validate troubleshooting commands
+6. Execute supported commands
+7. Monitor execution progress
+8. Generate reports
+
+---
+
+# Live Progress Tracking
+
+The web UI provides real-time execution visibility.
+
+Information displayed includes:
+
+- Completion percentage
+- Successful devices
+- Failed devices
+- Last completed device
+- Execution status
+
+Example:
+
+```text
+Running Validation
+
+████████████████████ 100%
+
+Completed: 14 / 14
+
+Successful: 14
+Failed: 0
+
+✅ Validation Complete
+
+[ View Results ]
 ```
 
-3. Install dependencies
+The workflow intentionally waits for the operator to review the completion summary before proceeding to the results page.
+
+---
+
+# Reporting
+
+The tool automatically generates multiple report formats.
+
+## HTML Reports
+
+Interactive browser-based reports including:
+
+- Device details
+- Firmware versions
+- Validation output
+- Command results
+
+## JSON Reports
+
+Machine-readable output for automation and integrations.
+
+## Markdown Reports
+
+Human-readable reports suitable for documentation and change records.
+
+---
+
+# Command Validation
+
+Before execution, commands are validated against the target device type.
+
+Benefits include:
+
+- Preventing unsupported commands
+- Reducing execution failures
+- Device-specific command validation
+- Safer troubleshooting workflows
+
+---
+
+# Safety Features
+
+The tool provides multiple safeguards:
+
+- Offline devices are skipped
+- Devices without site assignment are skipped
+- Invalid commands are identified and excluded
+- Device status verification before execution
+- Execution confirmation prompts
+
+---
+
+# Web UI Technologies
+
+The web interface is built using:
+
+| Technology | Purpose |
+|------------|---------|
+| Flask | Web framework |
+| Jinja2 | HTML template rendering |
+| HTML5 | UI structure |
+| CSS3 | Styling and responsive layout |
+| JavaScript | Dynamic interactions |
+| Fetch API | Live progress updates |
+| Python | Validation workflow engine |
+| PyCentral SDK | Aruba Central integration |
+| Aruba Central APIs | Firmware, device and site information |
+
+---
+
+# Architecture
+
+```text
++-----------------------+
+|       Flask UI        |
++-----------+-----------+
+            |
+            v
++-----------------------+
+| Validation Workflow   |
++-----------+-----------+
+            |
+            v
++-----------------------+
+|  Aruba Central APIs   |
++-----------+-----------+
+            |
+            v
++-----------------------+
+| Device Validation     |
+| Firmware Retrieval    |
+| Command Execution     |
++-----------+-----------+
+            |
+            v
++-----------------------+
+| Report Generation     |
++-----------------------+
+```
+
+---
+
+# Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/ariyaparsa-dev/central-python-workflows.git
+```
+
+Change to the application directory:
+
+```bash
+cd central-python-workflows/cutover-validation
+```
+
+Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-This workflow is tested with the `pycentral` SDK version `2.0a19`. Please check compatibility before executing on newer versions as there may be changes.
+---
 
-## Configuration
+# Running the Web Interface
 
-### Credentials Configuration
-
-Create an `account_credentials.yaml` file with your new Central API credentials:
-
-```yaml
-new_central:
-    base_url: <central-api-base-url>
-    client_id: <new-central-client-id>
-    client_secret: <new-central-client-secret>
-```
-
-**Sample Input:** See [`account_credentials.yaml`](./account_credentials.yaml) in this repository for an example credential file.
-
-> [!TIP]
-> **Where to find these:**
-> - [Central API Gateway Base URLs](https://developer.arubanetworks.com/new-central/docs/getting-started-with-rest-apis#api-gateway-base-urls) 
-> - [How to get API Credentials for new Central](https://developer.arubanetworks.com/new-central/docs/generating-and-managing-access-tokens)
-
-### Workflow Input Data
-
-The script requires a troubleshooting commands file and provides three flexible ways to select devices.
-
-#### Troubleshooting Commands File (Required)
-
-The troubleshooting commands file specifies which show commands will be executed on the selected devices. This file is always required.
-
-> [!IMPORTANT]
-> This workflow supports a maximum of **20 troubleshooting commands** per run.
-
-##### troubleshooting_commands.yaml
-```yaml
-commands:
-  - show ap debug lldp neighbor
-  - show ap bss-table
-  - show ap association
-  - show network
-```
-
-**Sample Input:** See [`troubleshooting_commands.yaml`](./troubleshooting_commands.yaml) in this repository.
-
-#### Device Selection Methods
-
-You have **three ways** to select which devices to run troubleshooting commands on:
-
-##### Method 1: No Device File - Site-Based Selection (Easiest)
-
-Don't provide any device file. The script will display all available sites and let you select one. It will then run troubleshooting commands on **all online APs** at the selected site.
-
-**When to use:** Quick troubleshooting of all APs at a specific site location.
-
-##### Method 2: Device YAML File - Specific Device List
-
-Provide a YAML file with a list of device serial numbers. Only these specific devices will be used.
-
-**devices.yaml**
-```yaml
-devices:
-  - SERIAL123456
-  - SERIAL789012
-  - SERIAL345678
-```
-
-**Sample Input:** See [`devices.yaml`](./devices.yaml) in this repository.
-
-**When to use:** Targeting specific devices across multiple sites or groups.
-
-##### Method 3: CSV File - Valid8 Tool Output
-
-Provide a CSV file in the format output by the Valid8 tool. The script will automatically extract device serial numbers and run troubleshooting commands on devices that are **online**.
-
-**Example CSV format (valid_8_output.csv):**
-```csv
-Serial_No,MAC_Address,tag:name1,tag:name2,Location_Name (Optional),Contact_Id
-SERIAL123456,1x:28:xx:xx:xx:xx16,,,,
-SERIAL789012,3x:xx:xx:xx:xx:xx,,,,
-SERIAL345678,9x:xx:xx:xx:xx:xx,,,,
-```
-
-**Sample Input:** See [`valid_8_output.csv`](./valid_8_output.csv) in this repository.
-
-The script automatically detects the serial number column. Supported column names:
-- `Serial_No`, `serial`, `serial_number`, `device_serial`, `serialnumber`, `serial number`
-
-If no matching column is found, it uses the first column.
-
-**When to use:** You have Valid8 tool output and want to troubleshoot those specific devices.
-
-## Execution
-
-Once you have setup the configuration files, you can run troubleshooting commands on your devices by running the following command:
+Start the application:
 
 ```bash
-python3 main.py -c account_credentials.yaml -t troubleshooting_commands.yaml
+python app.py
 ```
 
-The script processes each device through these steps:
+Open:
 
-1. **Input Validation** - Validates configuration file structure and credentials
-2. **Device Discovery** - Fetches devices from Central (optionally filtered by site)
-3. **Command Validation** - Validates commands against each device's capabilities
-4. **Command Execution** - Executes valid commands in a single batch per device using `run_show_commands` (up to 20 commands), processing up to 5 devices in parallel
-5. **Report Generation** - Generates JSON, HTML, and Markdown reports
-
-**If something fails:** The script skips invalid commands for that device and continues with the next command/device to avoid cascading failures.
-
-### Command Line Options
-
-| Flag | Type | Description | Required |
-|------|-------|------|----------|
-| `-c, --credentials` | string | Central API credentials file (YAML) | Yes |
-| `-t, --troubleshooting_commands` | string | YAML file with commands to run on all devices | Yes |
-| `-d, --devices` | string | YAML or CSV file containing device serial numbers | No |
-| `--max-workers` | int | Maximum number of devices to process concurrently (default: 5) | No |
-
-\* **Device Selection**: If you don't provide `-d`, the script will display available sites and let you select one to run commands on all online APs at that site.
-
-### Usage Examples
-
-#### Example 1: Site-based troubleshooting (no device file)
-```bash
-python3 main.py \
-  -c account_credentials.yaml \
-  -t troubleshooting_commands.yaml
-```
-The script will display available sites for you to select, then run commands on all online APs at that site.
-
-#### Example 2: Run troubleshooting on specific devices from YAML
-```bash
-python3 main.py \
-  -c account_credentials.yaml \
-  -d devices.yaml \
-  -t troubleshooting_commands.yaml
+```text
+http://127.0.0.1:5000
 ```
 
-#### Example 3: Run troubleshooting on devices from Valid8 CSV output
-```bash
-python3 main.py \
-  -c account_credentials.yaml \
-  -d valid_8_output.csv \
-  -t troubleshooting_commands.yaml
-```
-
-## Output
-
-### On-Screen Output
-
-The tool provides clear, structured terminal output to help users understand **what will run, what is running, and what was generated**.
-
-#### 1. Execution Preview & Confirmation
-
-Before any troubleshooting commands are executed, the tool displays:
-- Devices identified for troubleshooting
-- A summary table with device details
-- The list of commands that will be executed
-
-User confirmation is *required* before execution proceeds.
-
-![Screenshot of Confirmation on Terminal](Screenshots/execution-confirmation.png)
+in your browser.
 
 ---
 
-#### 2. Command Execution
+# Recent Enhancements
 
-Once confirmed, the tool executes the selected commands and shows:
-- Live execution progress
-- Per-device command status
-- Success or failure indicators
+## Validation Enhancements
 
-![Screenshot of Troubleshooting Show Command on Terminal](Screenshots/sample-command-output.png)
+- Site-based device selection
+- Device preview capabilities
+- Online device filtering
+- Improved command validation
+
+## Firmware Integration
+
+- Aruba Central firmware API integration
+- Firmware version visibility
+- Firmware reporting support
+
+## Web UI Enhancements
+
+- Flask-based workflow
+- Real-time execution tracking
+- Browser-based reporting
+- Manual results review workflow
+
+## Operational Improvements
+
+- Success/failure counters
+- Progress dashboard
+- Device status visibility
+- Improved user experience
 
 ---
 
-#### 3. Report Generation Summary
+# Future Enhancements
 
-After execution completes, the tool:
-- Generates reports in multiple formats
-- Displays the output directory
-- Provides direct paths to generated reports
+Planned improvements include:
 
-![Screenshot of Report Summary on Terminal](Screenshots/report-summary.png)
-
-
-### Report Files
-
-All outputs are saved in a timestamped directory.
-
-- **HTML** – Interactive report for review and validation  
-- **Markdown** – Documentation-friendly format  
-- **JSON** – Structured output for automation and parsing
+- Firmware API pagination support
+- Site-scoped firmware retrieval
+- Firmware recommendation reporting
+- Multi-site selection
+- Device filtering and search
+- Enhanced reporting dashboards
 
 ---
+# Author
 
-#### Sample Report Files
-
-Example reports are available to help understand the structure and content of each format:
-
-- **HTML:** [`sample_result_output/<timestamp>.html`](sample_result_output/2026-01-27_04-35-31.html)
-- **Markdown:** [`sample_result_output/<timestamp>.md`](sample_result_output/2026-01-27_04-35-31.md)
-- **JSON:** [`sample_result_output/<timestamp>.json`](sample_result_output/2026-01-27_04-35-31.json)
-
-These samples reflect real execution output and include device details, executed commands, and collected responses.
-
-## Troubleshooting
-
-| Problem | Fix |
-|---------|-----|
-| **Bad credentials** | Check your API client ID, client secret & base_url in `account_credentials.yaml` |
-| **Device not found** | Verify device serial numbers are correct and devices are in your Central account |
-| **Command validation failed** | Commands may not be supported by the device type/model |
-| **Connection timeout** | Ensure devices can reach Central and are online |
-| **File errors** | Check YAML syntax in your configuration files (use a YAML validator) |
-
-## Support
-
-- **Automation Team**: [aruba-automation@hpe.com](mailto:aruba-automation@hpe.com)
-- **Workflow Issues**: [GitHub Issues](https://github.com/aruba/central-python-workflows/issues)
-- **PyCentral Library**: [PyCentral Issues](https://github.com/aruba/pycentral/issues)
+Enhanced and maintained by Ariya Parsamanesh
