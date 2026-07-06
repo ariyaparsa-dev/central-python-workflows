@@ -95,7 +95,7 @@ Key capabilities include:
 
 The workflow retrieves device information directly from Aruba Central, validates commands against supported device types, executes troubleshooting commands on online devices, and generates comprehensive reports for operational review.
 
-For complete documentation see the workflow README within the `cutover-validation` directory.
+For complete documentation, installation instructions, architecture details, and Web UI workflow screenshots, see the /cutover-validation/README.md.
 
 ### [MSP Control Tower](/msp-tenant-monitoring/)
 This workflow monitors every tenant an MSP manages using a single MSP credential. It discovers managed tenants, then collects sites, devices, clients, and alerts from each one. It ships in two forms: a **web dashboard** for interactive exploration and a **Python CLI** (`main.py`) for scripted export.
