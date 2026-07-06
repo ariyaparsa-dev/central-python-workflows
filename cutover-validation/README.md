@@ -63,9 +63,9 @@ Example:
 
 ```yaml
 devices:
-  - CNK6KSM099
-  - VN3ALBD0MQ
-  - CNJFKLB01Q
+  - CNK6KS1111
+  - VN3AL22222
+  - CNJ3333333
 ```
 
 ---
