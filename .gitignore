@@ -23,6 +23,7 @@ __pycache__/
 **/.venv/
 
 # Backup files
+* - orig.*
 * - **ig.py
 * - last working.py
 * - bef**e progress.py

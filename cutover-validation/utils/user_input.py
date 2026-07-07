@@ -10,8 +10,9 @@ def prompt_confirmation(device_serials: List[str], commands: List[str]) -> bool:
     print(f"\n{'=' * SEPARATOR_WIDTH}")
     print("CONFIRMATION REQUIRED")
     print(f"{'=' * SEPARATOR_WIDTH}")
-    print(
-        f"\nThe following {len(commands)} troubleshooting command(s) will be executed:"
+    print( 
+        f"\nThe following {len(commands)} troubleshooting command(s) are configured "
+            "and will be selected based on device type:"
     )
     for i, cmd in enumerate(commands, 1):
         print(f"  {i}. {cmd}")

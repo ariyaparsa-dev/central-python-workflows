@@ -3,7 +3,7 @@
 import csv
 import sys
 import yaml
-from typing import List, Any, Optional
+from typing import List, Any, Optional, Dict
 from utils.config import CSV_SERIAL_COLUMNS, CSV_SAMPLE_SIZE, MAX_COMMANDS_SUPPORTED
 
 
@@ -24,40 +24,78 @@ def load_yaml_file(yaml_file: str, key: Optional[str] = None) -> Any:
         sys.exit(1)
 
 
-def load_commands(yaml_file: str) -> List[str]:
-    """Load troubleshooting commands from YAML file."""
+def load_commands(yaml_file: str) -> Dict[str, List[str]]:
+    """
+    Load troubleshooting commands from YAML file.
+
+    Expected format:
+
+    ap:
+      - show ap debug cloud-server
+      - show ap association
+      - show version
+
+    cx:
+      - show version
+      - show vlan
+      - show interface brief
+
+    gateway:
+      - show version
+      - show datapath session
+    """
+
     data = load_yaml_file(yaml_file)
-    if isinstance(data, dict) and "commands" in data:
-        commands = data.get("commands")
-    elif isinstance(data, list):
-        commands = data
-    else:
+
+    if not isinstance(data, dict) or not data:
         raise ValueError(
-            "Invalid YAML format. Expected 'commands' key or list of commands"
+            "Invalid YAML format. Expected device type sections such as "
+            "'ap', 'cx', and/or 'gateway'."
         )
 
-    if not isinstance(commands, list) or not commands:
-        raise ValueError("No valid commands found in YAML file")
+    command_config = {}
+    total_commands = 0
 
-    if len(commands) > MAX_COMMANDS_SUPPORTED:
+    for device_type, commands in data.items():
+        if not isinstance(device_type, str) or not device_type.strip():
+            raise ValueError(f"Invalid device type section: {device_type}")
+
+        device_type_key = device_type.strip().lower()
+
+        if not isinstance(commands, list) or not commands:
+            raise ValueError(
+                f"No valid commands found for device type '{device_type_key}'."
+            )
+
+        cleaned_commands = []
+
+        for cmd in commands:
+            if not isinstance(cmd, str) or not cmd.strip():
+                raise ValueError(
+                    f"Invalid command entry under '{device_type_key}': {cmd}. "
+                    "All commands must be non-empty strings."
+                )
+
+            s = cmd.strip()
+
+            if not s.lower().startswith("show "):
+                raise ValueError(
+                    f"Invalid command under '{device_type_key}': '{cmd}'. "
+                    "All commands must start with 'show '."
+                )
+
+            cleaned_commands.append(s)
+
+        command_config[device_type_key] = cleaned_commands
+        total_commands += len(cleaned_commands)
+
+    if total_commands > MAX_COMMANDS_SUPPORTED:
         raise ValueError(
-            f"Too many commands. Maximum supported is {MAX_COMMANDS_SUPPORTED}"
+            f"Too many commands. Maximum supported is {MAX_COMMANDS_SUPPORTED}. "
+            f"Configured total is {total_commands}."
         )
 
-    cleaned = []
-    for cmd in commands:
-        if not isinstance(cmd, str) or not cmd.strip():
-            raise ValueError(
-                f"Invalid command entry: {cmd}. All commands must be non-empty strings."
-            )
-        s = cmd.strip()
-        if not s.lower().startswith("show "):
-            raise ValueError(
-                f"Invalid command: '{cmd}'. All commands must start with 'show '."
-            )
-        cleaned.append(s)
-
-    return cleaned
+    return command_config
 
 
 def load_device_serials_from_yaml(yaml_file: str) -> List[str]:

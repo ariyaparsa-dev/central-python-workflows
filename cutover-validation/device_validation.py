@@ -13,7 +13,7 @@ import argparse
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 from pycentral import NewCentralBase
 from utils.firmware import get_firmware_lookup
 
@@ -39,9 +39,46 @@ from utils.report_generators import generate_all_reports
 
 _print_lock = threading.Lock()
 
+def get_device_command_type(device_instance) -> str:
+    """
+    Map a Central device object to a troubleshooting command category.
+
+    Expected YAML keys:
+      - ap
+      - cx
+      - gateway
+    """
+
+    device_type = str(getattr(device_instance, "device_type", "") or "").lower()
+    model = str(getattr(device_instance, "model", "") or "").lower()
+    persona = str(getattr(device_instance, "persona", "") or "").lower()
+
+    device_text = " ".join([device_type, model, persona])
+
+    if device_type in ["ap", "access_point", "access point"]:
+        return "ap"
+
+    if device_type in ["switch"]:
+        return "cx"
+
+    if device_type in ["gateway"]:
+        return "gateway"
+
+    # Fallback matching for cases where device_type is missing or inconsistent
+    if any(keyword in device_text for keyword in ["access point", "iap", "ap-"]):
+        return "ap"
+
+    if any(keyword in device_text for keyword in ["cx", "switch", "6200", "6300", "6400", "8320", "8400"]):
+        return "cx"
+
+    if any(keyword in device_text for keyword in ["gateway", "controller", "9004", "9012", "7005", "7010", "72"]):
+        return "gateway"
+
+    return "unknown"
+
 def process_single_device(
     device_serial: str,
-    commands: List[str],
+    command_config: Dict[str, List[str]],
     central_conn: NewCentralBase,
     progress_data=None,
 
@@ -84,6 +121,34 @@ def process_single_device(
                     f"Device with serial '{device_serial}' is {device_status}. Cannot execute commands. Skipping..."
                 )
             else:
+                # Validate commands
+                # Determine device command category
+
+                device_command_type = get_device_command_type(device_instance)
+
+                log(f"\nDetected device command type: {device_command_type}")
+
+                if device_command_type == "unknown":
+                    log(
+                        f"Unable to determine command type for device {device_serial}. "
+                        "No commands will be executed."
+                    )
+                    return results
+
+                commands = command_config.get(device_command_type, [])
+
+                if not commands:
+                    log(
+                        f"No troubleshooting commands defined for device type "
+                        f"'{device_command_type}'. Skipping device {device_serial}."
+                    )
+                    return results
+
+                log(
+                    f"Loaded {len(commands)} command(s) for device type "
+                    f"'{device_command_type}'"
+                )
+
                 # Validate commands
                 validation_results = validate_commands(
                     commands, device_instance, log=log
@@ -133,7 +198,7 @@ def process_single_device(
 
 
 def process_all_devices(
-    device_serials: List[str], commands: List[str], central_conn, max_workers: int,progress_data=None,
+    device_serials: List[str], command_config: Dict[str, List[str]], central_conn, max_workers: int,progress_data=None,
 ) -> List[CommandResult]:
     """Process all devices in parallel with bounded worker concurrency."""
     all_results = []
@@ -155,7 +220,7 @@ def process_all_devices(
                 executor.submit(
                     process_single_device,
                     serial,
-                    commands,
+                    command_config,
                     central_conn,
                     progress_data,
                 ): serial
@@ -193,7 +258,7 @@ def process_all_devices(
     return all_results
 
 
-def save_results(results: List[CommandResult], devices: List[Device]) -> None:
+def save_results(results: List[CommandResult], devices: List[Device]) -> str:
     """Save results and generate reports."""
     device_results: dict = {}
     for result in results:
@@ -307,13 +372,27 @@ def run_validation(
     - Original CLI interactive site selection mode
     """
 
-    # Load troubleshooting commands
+    # Load troubleshooting commands grouped by device type
     try:
-        commands = load_commands(troubleshooting_commands_file)
+        command_config = load_commands(troubleshooting_commands_file)
     except Exception as e:
         raise RuntimeError(f"Error loading troubleshooting commands: {str(e)}")
 
-    print(f"Loaded {len(commands)} troubleshooting command(s)")
+    if not isinstance(command_config, dict):
+        raise RuntimeError(
+            "Troubleshooting commands file must be a YAML dictionary grouped by device type."
+        )
+
+    total_commands = sum(
+        len(cmds)
+        for cmds in command_config.values()
+        if isinstance(cmds, list)
+    )
+
+    print(
+        f"Loaded {total_commands} troubleshooting command(s) "
+        f"across {len(command_config)} device type(s)"
+    )
 
     # Connect to API
     print("\nConnecting to Central...")
@@ -448,7 +527,14 @@ def run_validation(
     # Confirmation
     # ------------------------------------------------------------
     if not skip_confirmation:
-        if not prompt_confirmation(device_serials, commands):
+        all_configured_commands = [
+            cmd
+            for cmds in command_config.values()
+            if isinstance(cmds, list)
+            for cmd in cmds
+        ]
+
+        if not prompt_confirmation(device_serials, all_configured_commands):
             print("Execution cancelled by user.")
             return []
 
@@ -468,7 +554,7 @@ def run_validation(
 
     all_results = process_all_devices(
         device_serials,
-        commands,
+        command_config,
         central_conn,
         max_workers,
         progress_data,
@@ -477,6 +563,8 @@ def run_validation(
     # ------------------------------------------------------------
     # Save reports
     # ------------------------------------------------------------
+    report_folder = None
+
     if all_results:
         
         report_folder = save_results(

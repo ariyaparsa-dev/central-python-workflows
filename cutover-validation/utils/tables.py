@@ -71,7 +71,14 @@ def display_site_table(sites_data: dict) -> None:
         for idx, (_, data) in enumerate(sorted_sites, 1)
     ]
 
-    headers = ["#", "Site Name", "Total Devices", "APs", "Switches", "Gateways", "Total"]
+    headers = [
+    "#",
+    "Site Name",
+    "APs",
+    "Switches",
+    "Gateways",
+    "Total Devices",
+    ]
     print(f"\n{'=' * WIDE_SEPARATOR_WIDTH}")
     print("Available Sites:")
     print(f"{'=' * WIDE_SEPARATOR_WIDTH}")
