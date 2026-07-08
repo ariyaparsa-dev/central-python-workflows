@@ -51,8 +51,11 @@ Features:
 
 - Dynamic site discovery
 - Online device counts
-- AP, Switch, and Gateway visibility
+- AP, CX Switch, and Gateway visibility
+- Total device visibility per site
+- Firmware visibility before execution
 - Device preview before execution
+- Device type counts (APs, Switches, Gateways)
 
 ### Device File Selection
 
@@ -81,6 +84,47 @@ The solution supports:
 - Aruba Gateways
 
 ---
+
+# Device-Type Based Command Selection
+
+Troubleshooting commands are grouped by device type and automatically applied only to compatible devices.
+Example:
+
+```yaml
+
+ap:
+  - show ap debug cloud-server
+  - show ap association
+  - show version
+
+cx:
+  - show version
+  - show vlan
+  - show interface brief
+
+gateway:
+  - show version
+  - show datapath session
+
+```
+
+### Capabilities
+
+- Device-type based command selection
+- AP-specific command support
+- Aruba CX switch command support
+- Gateway-specific command support
+- Automatic device type detection
+- Reduced command execution failures
+
+### Benefits
+
+- Prevents unsupported command execution
+- Reduces failed API calls
+- Supports mixed AP, CX Switch, and Gateway environments
+- Produces cleaner validation reports
+- Simplifies troubleshooting workflow creation
+- Allows command sets to be updated without modifying Python code
 
 # Firmware Visibility
 
@@ -111,10 +155,12 @@ The workflow follows these steps:
 2. Discover available sites and devices
 3. Retrieve firmware information
 4. Select devices or sites
-5. Validate troubleshooting commands
-6. Execute supported commands
-7. Monitor execution progress
-8. Generate reports
+5. Identify device types
+6. Select device-specific commands
+7. Validate troubleshooting commands
+8. Execute supported commands
+9. Monitor execution progress
+10. Generate reports
 
 ---
 
@@ -217,35 +263,13 @@ The web interface is built using:
 
 ---
 
-# Architecture
 
-```text
-+-----------------------+
-|       Flask UI        |
-+-----------+-----------+
-            |
-            v
-+-----------------------+
-| Validation Workflow   |
-+-----------+-----------+
-            |
-            v
-+-----------------------+
-|  Aruba Central APIs   |
-+-----------+-----------+
-            |
-            v
-+-----------------------+
-| Device Validation     |
-| Firmware Retrieval    |
-| Command Execution     |
-+-----------+-----------+
-            |
-            v
-+-----------------------+
-| Report Generation     |
-+-----------------------+
-```
+<h1>Architecture</h1>
+
+<p align="center">
+  <img src="images/architecture.png" alt="Architecture Diagram" width="900">
+</p>
+
 
 ---
 
