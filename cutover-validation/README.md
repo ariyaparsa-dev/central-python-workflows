@@ -267,7 +267,7 @@ The web interface is built using:
 <h1>Architecture</h1>
 
 <p align="center">
-  <img src="images/architecture.png" alt="Architecture Diagram" width="900">
+  <img src="images/architecture.png" alt="Architecture Diagram" width="800">
 </p>
 
 
