@@ -1,0 +1,19 @@
+# Troubleshooting Commands YAML
+# These commands will be executed on all devices in the device list
+#commands:
+#  - show ip interface brief
+#  - show vlan
+ap:
+  - show ap debug cloud-server
+  - show ap association
+  - show version
+
+cx:
+  - show version
+  - show vlan
+  - show interface brief
+
+gateway:
+  - show version
+  - show datapath session
+
