@@ -8,6 +8,8 @@ __pycache__/
 #**redentials
 cutover**alidation/account_credentials.yam**
 cutover**alidation/devices.yam**
+cutover**alidation/troubleshooting_commands.yaml
+cutover**alidation/troubleshooting_commands orig.yaml
 # Uploads
 cutover-validation/upl**ds/
 
