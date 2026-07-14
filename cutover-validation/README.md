@@ -278,7 +278,7 @@ The web interface is built using:
 Clone the repository:
 
 ```bash
-git clone https://github.com/ariyaparsa-dev/central-python-workflows.git
+git clone -b feature/cutover-validation-enhancements https://github.com/ariyaparsa-dev/central-python-workflows.git
 ```
 
 Change to the application directory:
