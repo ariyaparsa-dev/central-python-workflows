@@ -145,6 +145,28 @@ pre {
     line-height: 1.5;
 }
 
+#siteSearch {
+
+    width: 100%;
+
+    padding: 12px;
+
+    background: #1f2937;
+    color: #f8fafc;
+
+    border: 1px solid #374151;
+    border-radius: 8px;
+
+    box-sizing: border-box;
+
+    margin-top: 8px;
+    margin-bottom: 20px;
+}
+
+#siteSearch::placeholder {
+    color: #94a3b8;
+}
+
 /* Optional Aruba Accent */
 
 .container::before {
@@ -155,7 +177,6 @@ pre {
     margin: -30px -30px 25px -30px;
     border-radius: 16px 16px 0 0;
 }
-
 
 .preview-btn {
     margin-top: 0;
@@ -173,7 +194,6 @@ pre {
     background: #009970;
 }
 
-
 .table-container {
     width: 100%;
     overflow-x: auto;
@@ -186,13 +206,11 @@ table {
     margin-top: 10px;
 }
 
-
 th, td {
     padding: 14px 20px;
     border-bottom: 1px solid #374151;
     text-align: left;
 }
-
 
 thead tr {
     background: #1f2937;
@@ -205,7 +223,6 @@ th {
 
 
 /* Column sizing */
-
 
 th:nth-child(1),
 td:nth-child(1) {
@@ -247,6 +264,75 @@ tbody tr:hover {
 </style>
 <script>
 
+function filterSites() {
+
+    const filter =
+        document.getElementById(
+            "siteSearch"
+        ).value.toLowerCase();
+
+    const rows =
+        document.querySelectorAll(
+            "tbody tr"
+        );
+
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+
+        const siteName =
+            row.cells[1].innerText.toLowerCase();
+
+        const siteId =
+            row.cells[2].innerText.toLowerCase();
+
+        const checkbox =
+            row.querySelector(
+                'input[name="selected_sites"]'
+            );
+
+        if (
+            siteName.includes(filter) ||
+            siteId.includes(filter)
+        ) {
+
+            row.style.display = "";
+            visibleCount++;
+
+        } else {
+
+            row.style.display = "none";
+
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+        }
+    });
+
+    document.getElementById(
+        "visibleSiteCount"
+    ).innerText = visibleCount;
+
+    updateSelectedCount();
+}
+
+function updateSiteCounts() {
+
+    const rows =
+        document.querySelectorAll(
+            "tbody tr"
+        );
+
+    document.getElementById(
+        "totalSiteCount"
+    ).innerText = rows.length;
+
+    document.getElementById(
+        "visibleSiteCount"
+    ).innerText = rows.length;
+}
+
+
 function updateSelectedCount() {
 
     let totalDevices = 0;
@@ -259,7 +345,7 @@ function updateSelectedCount() {
         totalSites++;
 
         totalDevices += parseInt(
-            cb.dataset.apCount
+            cb.dataset.apCount || 0
         );
     });
 
@@ -273,9 +359,30 @@ function updateSelectedCount() {
 }
 
     function selectAllSites() {
+        const searchText =
+            document.getElementById(
+                "siteSearch"
+            ).value.trim();
+
         document.querySelectorAll(
-            'input[name="selected_sites"]'
-        ).forEach(cb => cb.checked = true);
+            "tbody tr"
+        ).forEach(row => {
+
+            if (
+                searchText === "" ||
+                row.style.display !== "none"
+            ) {
+
+                const checkbox =
+                    row.querySelector(
+                        'input[name="selected_sites"]'
+                    );
+
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            }
+        });
 
         updateSelectedCount();
     }
@@ -288,6 +395,19 @@ function updateSelectedCount() {
         updateSelectedCount();
     }
 
+function clearSearch() {
+
+    const searchBox =
+        document.getElementById(
+            "siteSearch"
+        );
+
+    searchBox.value = "";
+
+    filterSites();
+
+    searchBox.focus();
+}
 
 
 function previewSite(deviceId) {
@@ -315,9 +435,26 @@ function previewSite(deviceId) {
 	Select one or more sites to run troubleshooting commands against online Access Points, Switches and Gateways.
     </p>
 
-    <button type="button" onclick="selectAllSites()">Select All</button>
+<label for="siteSearch">Search Sites</label>
+
+
+
+<input
+    type="text"
+    id="siteSearch"
+    placeholder="Search by site name or site ID ..."
+    onkeyup="filterSites()"
+>
+
+<p class="hint">
+Showing <span id="visibleSiteCount">0</span> of
+<span id="totalSiteCount">0</span> sites
+</p>
+
+    <button type="button" onclick="selectAllSites()">Select Visible</button>
     <button type="button" onclick="clearAllSites()">Clear All</button>
- 
+    <button type="button" onclick="clearSearch()">Clear Search</button>
+
     <p>
        <strong>Total Devices Selected:</strong>
        <span id="selectedApCount">0</span>
@@ -353,8 +490,7 @@ function previewSite(deviceId) {
     			  type="checkbox"
     			  name="selected_sites"
     			  value="{{ site_id }}"
-    			  checked
-       			  data-ap-count="{{ site.get('online_count', 0) }}"
+    			  data-ap-count="{{ site.get('online_count', 0) }}"
     			  onchange="updateSelectedCount()"
 			>
                     </td>
@@ -410,6 +546,7 @@ function previewSite(deviceId) {
 
 <script>
     updateSelectedCount();
+    updateSiteCounts();
 </script>
 
 </body>
