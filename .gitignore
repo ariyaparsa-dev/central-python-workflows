@@ -10,6 +10,8 @@ cutover**alidation/account_credentials.yam**
 cutover**alidation/devices.yam**
 cutover**alidation/troubleshooting_commands.yaml
 cutover**alidation/troubleshooting_commands orig.yaml
+cutover**alidation/*copy.yaml
+cutover**alidation/*last_working*.py
 # Uploads
 cutover-validation/upl**ds/
 

@@ -358,7 +358,7 @@ function updateSelectedCount() {
     ).innerText = totalSites;
 }
 
-    function selectAllSites() {
+    function selectVisibleSites() {
         const searchText =
             document.getElementById(
                 "siteSearch"
@@ -451,7 +451,7 @@ Showing <span id="visibleSiteCount">0</span> of
 <span id="totalSiteCount">0</span> sites
 </p>
 
-    <button type="button" onclick="selectAllSites()">Select Visible</button>
+    <button type="button" onclick="selectVisibleSites()">Select Visible</button>
     <button type="button" onclick="clearAllSites()">Clear All</button>
     <button type="button" onclick="clearSearch()">Clear Search</button>
 

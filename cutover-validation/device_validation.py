@@ -7,6 +7,318 @@ Supports separate YAML files for devices and troubleshooting commands.
 Supports CSV input for device lists.
 """
 
+import yaml
+
+
+def is_placeholder_value(value: str) -> bool:
+    """
+    Detect placeholder/example values commonly found in sample YAML files.
+    """
+
+    if value is None:
+        return True
+
+    value_lower = str(value).strip().lower()
+
+    placeholder_indicators = [
+        "<",
+        ">",
+        "add your",
+        "use the correct",
+        "example",
+        "client id here",
+        "client secret here",
+        "access token here",
+        "base url",
+    ]
+
+    return any(
+        indicator in value_lower
+        for indicator in placeholder_indicators
+    )
+
+
+def validate_credentials_file(credentials_file):
+    """
+    Validate that the uploaded YAML appears to be a Central credentials file
+    before loading it into PyCentral.
+
+    This catches common operator mistakes such as:
+    - Selecting a device inventory YAML instead of credentials
+    - Selecting a troubleshooting commands YAML instead of credentials
+    - Using the sample credentials file without replacing placeholder values
+    """
+
+    try:
+        with open(credentials_file, "r") as f:
+            data = yaml.safe_load(f)
+
+    except Exception as e:
+        raise RuntimeError(
+            f"Unable to read credentials file: {str(e)}"
+        )
+
+    if not isinstance(data, dict):
+        raise RuntimeError(
+            "Invalid credentials file format. "
+            "Expected a YAML dictionary containing Central credentials."
+        )
+
+    #
+    # Common user mistakes
+    #
+
+    if "devices" in data:
+        raise RuntimeError(
+            "The uploaded file appears to be a Device Inventory YAML file. "
+            "Please select a Central Credentials YAML file."
+        )
+
+    if any(key in data for key in ["ap", "cx", "gateway"]):
+        raise RuntimeError(
+            "The uploaded file appears to be a Troubleshooting Commands YAML file. "
+            "Please select a Central Credentials YAML file."
+        )
+
+    #
+    # Expected PyCentral top-level application sections
+    #
+
+    valid_apps = [
+        "new_central",
+        "glp",
+        "unified",
+    ]
+
+    detected_app = None
+
+    for app in valid_apps:
+        if app in data:
+            detected_app = app
+            break
+
+    if not detected_app:
+        found_keys = ", ".join(data.keys())
+
+        raise RuntimeError(
+            "Invalid credentials file. "
+            "Expected one of the following top-level sections: "
+            "new_central, glp, unified. "
+            f"Found: {found_keys}"
+        )
+
+    central_config = data.get(detected_app)
+
+    if not isinstance(central_config, dict):
+        raise RuntimeError(
+            f"Invalid credentials file. "
+            f"The '{detected_app}' section must contain credential fields."
+        )
+
+    #
+    # Required fields
+    #
+
+    required_fields = [
+        "base_url",
+        "client_id",
+        "client_secret",
+    ]
+
+    for field in required_fields:
+
+        
+        raw_value = central_config.get(field)
+
+        if raw_value is None:
+            raise RuntimeError(
+                f"Credentials file is missing required field '{field}' "
+                f"under '{detected_app}'."
+            )
+
+        value = str(raw_value).strip()
+
+        if value == "":
+            raise RuntimeError(
+                f"Credentials file is missing required field '{field}' "
+                f"under '{detected_app}'."
+            )
+
+        if is_placeholder_value(value):
+            raise RuntimeError(
+                f"Credentials file contains a placeholder value for '{field}'. "
+                "Please update the credentials file with valid Aruba Central API credentials."
+            )
+
+    #
+    # Optional fields should not contain placeholders if present
+    #
+
+    optional_fields = [
+        "access_token",
+        "refresh_token",
+        "customer_id",
+    ]
+
+    for field in optional_fields:
+
+        if field in central_config:
+
+            raw_value = central_config.get(field)
+
+            if raw_value is None:
+                continue
+
+
+            value = str(raw_value).strip()
+
+            if is_placeholder_value(value):
+                raise RuntimeError(
+                    f"Credentials file contains a placeholder value for '{field}'. "
+                    "Please update the credentials file with valid Aruba Central API credentials."
+                )
+            
+def validate_troubleshooting_commands_file(commands_file):
+    """
+    Validate Troubleshooting Commands YAML file.
+    """
+
+    try:
+
+        with open(commands_file, "r") as f:
+            data = yaml.safe_load(f)
+
+    except Exception as e:
+
+        raise RuntimeError(
+            f"Unable to read troubleshooting commands file: {str(e)}"
+        )
+
+    if not isinstance(data, dict):
+
+        raise RuntimeError(
+            "Invalid troubleshooting commands file format."
+        )
+
+    #
+    # Common operator mistakes
+    #
+
+    if "devices" in data:
+
+        raise RuntimeError(
+            "The uploaded file appears to be a Device Inventory YAML file. "
+            "Please select a Troubleshooting Commands YAML file."
+        )
+
+    if any(
+        app in data
+        for app in ["new_central", "glp", "unified"]
+    ):
+
+        raise RuntimeError(
+            "The uploaded file appears to be a Central Credentials YAML file. "
+            "Please select a Troubleshooting Commands YAML file."
+        )
+
+    #
+    # Expected command groups
+    #
+
+    valid_groups = [
+        "ap",
+        "cx",
+        "gateway"
+    ]
+
+    found_groups = [
+        group
+        for group in valid_groups
+        if group in data
+    ]
+
+    if not found_groups:
+
+        raise RuntimeError(
+            "No valid command groups were found. "
+            "Expected at least one of: ap, cx, gateway."
+        )
+
+    #
+    # Validate commands
+    #
+
+    for group in found_groups:
+
+        commands = data.get(group)
+
+        if commands is None:
+
+            if group == "ap":
+                raise RuntimeError(
+                    "No commands were defined under 'ap'.\n\n"
+                    "If you do not want to run Access Point commands, "
+                    "remove the 'ap' section from the troubleshooting commands YAML file."
+                )
+
+            elif group == "cx":
+                raise RuntimeError(
+                    "No commands were defined under 'cx'.\n\n"
+                    "If you do not want to run CX switch commands, "
+                    "remove the 'cx' section from the troubleshooting commands YAML file."
+                )
+
+            elif group == "gateway":
+                raise RuntimeError(
+                    "No commands were defined under 'gateway'.\n\n"
+                    "If you do not want to run Gateway commands, "
+                    "remove the 'gateway' section from the troubleshooting commands YAML file."
+                )
+
+        if not isinstance(commands, list):
+
+            raise RuntimeError(
+                f"Commands under '{group}' must be a YAML list."
+            )
+
+        if len(commands) == 0:
+
+            if group == "ap":
+                raise RuntimeError(
+                    "No commands were defined under 'ap'.\n\n"
+                    "If you do not want to run Access Point commands, "
+                    "remove the 'ap' section from the troubleshooting commands YAML file."
+                )
+
+            elif group == "cx":
+                raise RuntimeError(
+                    "No commands were defined under 'cx'.\n\n"
+                    "If you do not want to run CX switch commands, "
+                    "remove the 'cx' section from the troubleshooting commands YAML file."
+                )
+
+            elif group == "gateway":
+                raise RuntimeError(
+                    "No commands were defined under 'gateway'.\n\n"
+                    "If you do not want to run Gateway commands, "
+                    "remove the 'gateway' section from the troubleshooting commands YAML file."
+                )
+
+        for command in commands:
+
+            if not isinstance(command, str):
+
+                raise RuntimeError(
+                    f"Invalid command detected under '{group}'. "
+                    "All commands must be text strings."
+                )
+
+            if not command.strip():
+
+                raise RuntimeError(
+                    f"Empty command detected under '{group}'."
+                )
+
 import io
 import sys
 import argparse
@@ -338,18 +650,50 @@ def get_sites_for_selection(credentials_file: str):
     Connect to Central and return sites/devices data for web-based site selection.
     Used by Flask before running validation.
     """
-    print("\nConnecting to Central...")
-    central_conn = NewCentralBase(
-        token_info=credentials_file,
-        enable_scope=True,
-        log_level="ERROR",
-    )
 
+    validate_credentials_file(credentials_file)
+
+    print("\nConnecting to Central...")
+
+    try:
+        central_conn = NewCentralBase(
+            token_info=credentials_file,
+            enable_scope=True,
+            log_level="ERROR",
+        )
+
+    except Exception as e:
+        raise RuntimeError(
+            "Unable to initialize Aruba Central connection. "
+            "Please verify the credentials file format and contents."
+        )
+
+    print("Validating Aruba Central credentials...")
     print("Fetching all sites and devices...")
-    sites_data = fetch_sites_and_devices(central_conn)
+
+    try:
+        sites_data = fetch_sites_and_devices(
+            central_conn
+        )
+
+    except Exception as e:
+        raise RuntimeError(
+            "Unable to authenticate to Aruba Central or retrieve site/device data. "
+            "Please verify the credentials file contents, including base_url, "
+            "client_id, client_secret, and access_token."
+        )
 
     if not sites_data:
-        raise RuntimeError("No sites with online devices found in the account.")
+        raise RuntimeError(
+            "No sites with online devices were returned from Aruba Central.\n\n"
+            "Possible causes:\n"
+            "- Invalid Aruba Central credentials\n"
+            "- Insufficient API permissions\n"
+            "- No sites exist in the account\n"
+            "- No devices are currently online"
+        )
+
+    print("Aruba Central credentials validated successfully.")
 
     return sites_data
 
@@ -374,7 +718,9 @@ def run_validation(
 
     # Load troubleshooting commands grouped by device type
     try:
+        validate_troubleshooting_commands_file(troubleshooting_commands_file)
         command_config = load_commands(troubleshooting_commands_file)
+
     except Exception as e:
         raise RuntimeError(f"Error loading troubleshooting commands: {str(e)}")
 
@@ -396,6 +742,7 @@ def run_validation(
 
     # Connect to API
     print("\nConnecting to Central...")
+    validate_credentials_file(credentials_file) 
 
     try:
         central_conn = NewCentralBase(
@@ -462,10 +809,29 @@ def run_validation(
         print("\nNo device file provided. Using site selection mode...\n")
         print("Fetching all sites and devices...")
 
-        sites_data = fetch_sites_and_devices(central_conn)
+        try:
+            sites_data = fetch_sites_and_devices(
+                central_conn
+            )
+
+        except Exception as e:
+            raise RuntimeError(
+                "Unable to authenticate to Aruba Central or retrieve site/device data. "
+                "Please verify the credentials file contents, including base_url, "
+                "client_id, client_secret, and access_token."
+            )
 
         if not sites_data:
-            raise RuntimeError("No sites with online devices found in the account.")
+            raise RuntimeError(
+                "No sites with online devices were returned from Aruba Central.\n\n"
+                "Possible causes:\n"
+                "- Invalid Aruba Central credentials\n"
+                "- Insufficient API permissions\n"
+                "- No sites exist in the account\n"
+                "- No devices are currently online"
+            )
+
+
 
         display_site_table(sites_data)
 

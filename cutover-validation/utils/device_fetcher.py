@@ -97,8 +97,15 @@ def fetch_sites_and_devices(central_conn) -> dict:
     """Fetch all sites and devices from the account, filtering sites with 0 online APs."""
     try:
         sites_data = {}
+      
+        all_sites = list(
+            central_conn.scopes.sites
+        )
 
-        for site in central_conn.scopes.sites:
+        
+        for site in all_sites:
+
+
             site_id = site.get_id()
             site_name = site.name
             site_devices_id = site.devices
@@ -203,8 +210,10 @@ def fetch_sites_and_devices(central_conn) -> dict:
 
 
         return sites_data
-    except Exception as e:
-        print(f"Error fetching sites and devices: {e}")
-        import sys
 
-        sys.exit(1)
+    except Exception as e:
+            
+            raise RuntimeError(
+                    f"Authentication or site retrieval failed: {str(e)}"
+                )
+

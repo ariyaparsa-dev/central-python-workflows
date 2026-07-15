@@ -1,7 +1,6 @@
 
 import os
 import io
-import traceback
 import contextlib
 import threading
 
@@ -21,6 +20,7 @@ from werkzeug.utils import secure_filename
 from device_validation import (
     run_validation,
     get_sites_for_selection,
+    validate_troubleshooting_commands_file,
 )
 
 from utils.config import MAX_CONCURRENT_DEVICE_EXECUTIONS
@@ -137,14 +137,16 @@ def validation_worker(
             ),
         }
 
-    except Exception:
+
+    except Exception as e:
 
         last_validation_result = {
             "output": buffer.getvalue(),
-            "error": traceback.format_exc(),
+            "error": str(e),
             "report_folder": None,
             "report_files": [],
         }
+
 
     progress_data["status"] = "completed"
     
@@ -224,8 +226,8 @@ def index():
                         report_files=report_files,
                     )
 
-                except Exception:
-                    error = traceback.format_exc()
+                except Exception as e:
+                    error = str(e)
                     output = buffer.getvalue()
 
             #
@@ -238,6 +240,7 @@ def index():
                 try:
 
                     with contextlib.redirect_stdout(buffer):
+                        validate_troubleshooting_commands_file(commands_path)
                         sites_data = get_sites_for_selection(
                             credentials_path
                         )
@@ -248,10 +251,9 @@ def index():
                         log_output=buffer.getvalue(),
                     )
 
-                except Exception:
-                    error = traceback.format_exc()
+                except Exception as e:
+                    error = str(e)
                     output = buffer.getvalue()
-
             #
             # User clicked "Run with Device File"
             # but forgot to upload one
@@ -263,34 +265,13 @@ def index():
                     "or choose 'Load Sites for Selection'."
                 )
 
-
-            # Option B: no device file, load sites for selection
-            elif action == "load_sites":
-                buffer = io.StringIO()
-
-                try:
-                    with contextlib.redirect_stdout(buffer):
-                        sites_data = get_sites_for_selection(credentials_path)
-
-                    return render_template(
-                        "select_sites.html",
-                        sites=sites_data,
-                        log_output=buffer.getvalue(),
-                    )
-
-                except Exception:
-                    error = traceback.format_exc()
-                    output = buffer.getvalue()
-
+            
     return render_template(
         "index.html",
         output=output,
         error=error,
         default_workers=MAX_CONCURRENT_DEVICE_EXECUTIONS,
     )
-
-
-@app.route("/run_site_validation", methods=["POST"])
 
 
 @app.route("/run_site_validation", methods=["POST"])
@@ -388,6 +369,4 @@ def progress():
 
 if __name__ == "__main__":
     app.run(debug=True)
-
-
 
