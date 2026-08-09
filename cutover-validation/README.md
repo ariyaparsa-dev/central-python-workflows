@@ -4,6 +4,13 @@ Enhanced fork of Aruba Central Python Workflows focused on cutover validation, f
 
 A web-based validation and troubleshooting workflow for Aruba Central environments that enables operators to safely execute validation commands against Access Points, CX Switches, and Gateways while providing firmware visibility, real-time progress tracking, and multi-format reporting.
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11+-blue" alt="Python">
+  <img src="https://img.shields.io/badge/Flask-Web_App-green" alt="Flask">
+  <img src="https://img.shields.io/badge/Aruba-ClearPass-orange" alt="ClearPass">
+  <img src="https://img.shields.io/badge/License-MIT-yellow" alt="License">
+</p>
+
 ---
 
 # Overview
@@ -26,6 +33,10 @@ The solution supports both command-line and web-based execution models and lever
 ## Web User Interface
 
 The solution includes a modern Flask-based web interface that provides an end-to-end workflow without requiring command-line interaction.
+
+<p align="center">
+  <img src="Screenshots/screenshot-1.jpg" alt="Web User Interface" width="800">
+</p>
 
 ### Capabilities
 
@@ -56,6 +67,14 @@ Features:
 - Firmware visibility before execution
 - Device preview before execution
 - Device type counts (APs, Switches, Gateways)
+
+<p align="center">
+  <img src="Screenshots/screenshot-2.jpg" alt="Site selection" width="800">
+</p>
+
+<p align="center">
+  <img src="Screenshots/screenshot-3.jpg" alt="Monitor execution progress" width="800">
+</p>
 
 ### Device File Selection
 
@@ -201,6 +220,10 @@ The workflow intentionally waits for the operator to review the completion summa
 
 The tool automatically generates multiple report formats.
 
+<p align="center">
+  <img src="Screenshots/screenshot-4.jpg" alt="Validation Results" width="800">
+</p>
+
 ## HTML Reports
 
 Interactive browser-based reports including:
@@ -209,6 +232,14 @@ Interactive browser-based reports including:
 - Firmware versions
 - Validation output
 - Command results
+
+<p align="center">
+  <img src="Screenshots/screenshot-6a.jpg" alt="Web User Interface" width="800">
+</p>
+
+<p align="center">
+  <img src="Screenshots/screenshot-6b.jpg" alt="Web User Interface" width="800">
+</p>
 
 ## JSON Reports
 
