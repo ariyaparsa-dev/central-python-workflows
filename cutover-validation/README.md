@@ -35,7 +35,7 @@ The solution supports both command-line and web-based execution models and lever
 The solution includes a modern Flask-based web interface that provides an end-to-end workflow without requiring command-line interaction.
 
 <p align="center">
-  <img src="Screenshots/screenshot-1.jpg" alt="Web User Interface" width="800">
+  <img src="Screenshots/screenshot-1.jpg" alt="Web User Interface">
 </p>
 
 ### Capabilities
@@ -69,11 +69,11 @@ Features:
 - Device type counts (APs, Switches, Gateways)
 
 <p align="center">
-  <img src="Screenshots/screenshot-2.jpg" alt="Site selection" width="800">
+  <img src="Screenshots/screenshot-2.jpg" alt="Site selection" >
 </p>
 
 <p align="center">
-  <img src="Screenshots/screenshot-3.jpg" alt="Monitor execution progress" width="800">
+  <img src="Screenshots/screenshot-3.jpg" alt="Monitor execution progress" >
 </p>
 
 ### Device File Selection
